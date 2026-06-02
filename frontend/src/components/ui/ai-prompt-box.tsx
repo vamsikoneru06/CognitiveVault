@@ -173,23 +173,31 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 }) => {
   const [time, setTime] = React.useState(0);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  // Use a ref to read current time inside the effect without it being a dep.
+  const timeRef = React.useRef(0);
 
   React.useEffect(() => {
     if (isRecording) {
+      timeRef.current = 0;
+      setTime(0);
       onStartRecording();
-      timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
+      timerRef.current = setInterval(() => {
+        timeRef.current += 1;
+        setTime(timeRef.current);
+      }, 1000);
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      onStopRecording(time);
+      onStopRecording(timeRef.current);
       setTime(0);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording, time, onStartRecording, onStopRecording]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

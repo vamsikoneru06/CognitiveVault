@@ -21,12 +21,16 @@ FUNCTIONS EXPORTED:
       Used by Phase 5's /chat/stream endpoint for the React frontend.
 """
 
+import json
+import logging
 from typing import Generator, List
 
 import ollama
 from langchain_core.documents import Document
 
 from app.config import settings
+
+log = logging.getLogger(__name__)
 
 
 # ================================================================== #
@@ -201,35 +205,28 @@ def stream_answer(
 
     # stream=True tells Ollama to yield each token as it's generated
     # instead of waiting for the complete response.
-    stream = ollama.chat(
-        model=settings.ollama_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": user_message},
-        ],
-        stream=True,
-        options={"temperature": 0.1, "num_ctx": 8192},
-    )
+    try:
+        stream = ollama.chat(
+            model=settings.ollama_model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_message},
+            ],
+            stream=True,
+            options={"temperature": 0.1, "num_ctx": 8192},
+        )
 
-    for chunk in stream:
-        # Each chunk.message.content is a token (word fragment).
-        # We skip empty tokens (Ollama sometimes yields "" at the end).
-        token = chunk.message.content
-        if token:
-            yield token
+        for chunk in stream:
+            token = chunk.message.content
+            if token:
+                yield token
+
+    except Exception as e:
+        log.error("Ollama streaming error: %s", e)
+        yield "\x1eERROR"
+        return
 
     # ── Sources payload ───────────────────────────────────────────────
-    # After all text tokens, emit a final special chunk that the React
-    # frontend uses to display source citations.
-    #
-    # PROTOCOL:
-    #   \x1e = ASCII Record Separator (character code 30)
-    #   This character NEVER appears in LLM-generated text, making it
-    #   a safe delimiter. The React client splits on this byte.
-    #
-    # FORMAT:
-    #   "\x1e" + JSON.stringify([{ page, source_filename, score, preview }])
-    import json
     sources_payload = [
         {
             # page is 0-indexed in pypdf metadata; +1 for human-readable display

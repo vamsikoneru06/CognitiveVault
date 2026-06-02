@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import ChatWindow from './components/ChatWindow';
 import { PromptInputBox } from './components/ui/ai-prompt-box';
 import { WovenCanvas } from './components/ui/woven-light-hero';
-import { streamQuery } from './services/api';
+import { streamQuery, uploadDocument } from './services/api';
 import type { Message } from './types';
 
 let _counter = 0;
@@ -24,9 +24,32 @@ export default function App() {
     ));
   }, []);
 
-  const handleSend = useCallback((message: string, _files?: File[]) => {
+  const handleSend = useCallback(async (message: string, files?: File[]) => {
     const question = message.trim();
     if (!question || isQuerying) return;
+
+    // If a file is attached, upload it first and get its document_id
+    let docId: string | null = null;
+    if (files && files.length > 0) {
+      const uploadMsgId = newId();
+      setMessages(prev => [...prev, {
+        id: uploadMsgId, role: 'assistant' as const,
+        content: '', isLoading: true, isStreaming: false, sources: [],
+      }]);
+      try {
+        const uploaded = await uploadDocument(files[0]);
+        docId = uploaded.document_id;
+        setMessages(prev => prev.filter(m => m.id !== uploadMsgId));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Upload failed';
+        setMessages(prev => prev.map(m =>
+          m.id === uploadMsgId
+            ? { ...m, content: `⚠ ${msg}`, isLoading: false, isError: true }
+            : m,
+        ));
+        return;
+      }
+    }
 
     abortRef.current = new AbortController();
     setIsQuerying(true);
@@ -41,7 +64,7 @@ export default function App() {
 
     streamQuery(
       question,
-      null,
+      docId,
       5,
       (token) => {
         setMessages(prev => prev.map(m =>

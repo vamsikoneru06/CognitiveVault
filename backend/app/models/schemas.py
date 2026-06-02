@@ -14,8 +14,9 @@ FastAPI uses these classes to do three things automatically:
 Think of each class as a "shape" that data must conform to.
 """
 
+import re
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ================================================================== #
@@ -109,6 +110,14 @@ class QueryRequest(BaseModel):
             "If None, the query searches across ALL uploaded documents."
         ),
     )
+
+    @field_validator("document_id")
+    @classmethod
+    def validate_document_id(cls, v: str | None) -> str | None:
+        if v is not None and not re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", v):
+            raise ValueError("document_id must be a valid UUID4.")
+        return v
+
     top_k: int = Field(
         default=5,
         ge=1,   # ge = greater than or equal to

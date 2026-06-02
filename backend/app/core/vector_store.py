@@ -77,24 +77,21 @@ def ensure_collection_exists() -> None:
     existing_names = [c.name for c in client.get_collections().collections]
 
     if settings.qdrant_collection_name not in existing_names:
-        client.create_collection(
-            collection_name=settings.qdrant_collection_name,
-            vectors_config=VectorParams(
-                # CRITICAL: This MUST match settings.embedding_dimension (384).
-                # If the model produces 384-dim vectors but the collection
-                # expects 768, Qdrant will reject every insert with an error.
-                size=settings.embedding_dimension,
-
-                # COSINE: measures the angle between two vectors.
-                # Score range: [0, 1] when embeddings are normalized.
-                # Score 1.0 = identical direction = identical meaning.
-                # Score 0.0 = perpendicular = unrelated meaning.
-                # Alternative: Distance.DOT (dot product) or Distance.EUCLID
-                distance=Distance.COSINE,
-            ),
-        )
-        print(f"✓ Created Qdrant collection: '{settings.qdrant_collection_name}'")
-        print(f"  Vector size: {settings.embedding_dimension} | Distance: COSINE")
+        try:
+            client.create_collection(
+                collection_name=settings.qdrant_collection_name,
+                vectors_config=VectorParams(
+                    size=settings.embedding_dimension,
+                    distance=Distance.COSINE,
+                ),
+            )
+            print(f"✓ Created Qdrant collection: '{settings.qdrant_collection_name}'")
+            print(f"  Vector size: {settings.embedding_dimension} | Distance: COSINE")
+        except Exception as e:
+            # Concurrent request may have created the collection between our check and create.
+            if "already exists" not in str(e).lower():
+                raise
+            print(f"✓ Collection '{settings.qdrant_collection_name}' already exists.")
     else:
         print(f"✓ Collection '{settings.qdrant_collection_name}' already exists.")
 

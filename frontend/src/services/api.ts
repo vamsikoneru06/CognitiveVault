@@ -4,7 +4,7 @@
 
 import type { SourceItem, UploadedDoc } from '../types';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE ?? 'http://localhost:8000/api/v1';
 
 // =================================================================
 // Upload
@@ -14,7 +14,13 @@ export async function uploadDocument(file: File): Promise<UploadedDoc> {
   const body = new FormData();
   body.append('file', file);
 
-  const res = await fetch(`${API_BASE}/documents/upload`, { method: 'POST', body });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/documents/upload`, { method: 'POST', body });
+  } catch (e) {
+    throw new Error('Cannot reach the backend. Is it running?');
+  }
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail ?? `Upload failed (${res.status})`);
   return data as UploadedDoc;
@@ -35,6 +41,7 @@ export function streamQuery(
   signal?:    AbortSignal,
 ): void {
   const SEP = '\x1e';
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
   fetch(`${API_BASE}/chat/stream`, {
     method: 'POST',
@@ -48,33 +55,53 @@ export function streamQuery(
         throw new Error(err.detail as string);
       }
 
-      const reader  = res.body!.getReader();
+      if (!res.body) {
+        onError('Empty response body');
+        return;
+      }
+
+      reader = res.body.getReader();
       const decoder = new TextDecoder();
 
+      // Accumulate across chunks so the SEP delimiter is never missed
+      // at a chunk boundary.
+      let buf = '';
+
       const read = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) { onDone(); return; }
+        const { done, value } = await reader!.read();
 
-        const text   = decoder.decode(value);
-        const sepIdx = text.indexOf(SEP);
-
-        if (sepIdx !== -1) {
-          if (sepIdx > 0) onToken(text.substring(0, sepIdx));
-          try { onSources(JSON.parse(text.substring(sepIdx + 1)) as SourceItem[]); }
-          catch { onSources([]); }
+        if (done) {
+          if (buf) onToken(buf);
           onDone();
-          reader.releaseLock();
           return;
         }
 
-        onToken(text);
+        buf += decoder.decode(value, { stream: true });
+        const sepIdx = buf.indexOf(SEP);
+
+        if (sepIdx !== -1) {
+          if (sepIdx > 0) onToken(buf.substring(0, sepIdx));
+          const jsonStr = buf.substring(sepIdx + 1);
+          try { onSources(JSON.parse(jsonStr) as SourceItem[]); }
+          catch { onSources([]); }
+          onDone();
+          reader!.cancel();
+          return;
+        }
+
+        // Flush all but the last character — guards against a lone \x1e
+        // arriving as the last byte of a chunk with JSON in the next chunk.
+        if (buf.length > 1) {
+          onToken(buf.slice(0, -1));
+          buf = buf.slice(-1);
+        }
         return read();
       };
 
       await read();
     })
     .catch((err: Error) => {
-      if (err.name === 'AbortError') return;
+      if (err.name === 'AbortError') { reader?.cancel(); return; }
       onError(err.message);
     });
 }

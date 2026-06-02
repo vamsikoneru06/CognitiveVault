@@ -94,7 +94,7 @@ async def on_startup() -> None:
     # not async). We use run_in_executor to run it in a thread pool so it
     # doesn't block uvicorn's event loop during startup.
     from app.core.embeddings import get_embedding_model
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, get_embedding_model)
 
     print("✓ All systems ready. CognitiveVault is accepting requests.")
@@ -135,10 +135,4 @@ async def health_check() -> dict:
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "debug": settings.debug,
-        "config": {
-            "qdrant": f"{settings.qdrant_host}:{settings.qdrant_port}",
-            "ollama_model": settings.ollama_model,
-            "embedding_model": settings.embedding_model,
-        },
     }

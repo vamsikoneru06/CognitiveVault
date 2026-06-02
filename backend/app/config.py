@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     # In DEBUG mode FastAPI shows detailed error tracebacks.
     # Set DEBUG=False in production.
-    debug: bool = True
+    debug: bool = False
 
     # ------------------------------------------------------------------ #
     #  Qdrant Vector Database                                              #
@@ -87,9 +87,9 @@ class Settings(BaseSettings):
 
     @property
     def upload_path(self) -> Path:
-        """Return the upload directory as a Path object.
-        Path objects are safer than raw strings for file operations."""
-        return Path(self.upload_dir)
+        """Return the upload directory as an absolute Path.
+        Resolving relative to this file prevents CWD-dependent behaviour."""
+        return Path(__file__).parent.parent / self.upload_dir
 
     @field_validator("embedding_dimension")
     @classmethod

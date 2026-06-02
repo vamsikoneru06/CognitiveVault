@@ -117,9 +117,11 @@ def query_documents(request: QueryRequest) -> QueryResponse:
             ),
         )
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("LLM generation error: %s", e)
         raise HTTPException(
             status_code=500,
-            detail=f"LLM generation failed: {e}",
+            detail="LLM generation failed. Check server logs for details.",
         )
 
     print(f"   ✓ Answer generated ({len(answer)} chars)")
@@ -163,29 +165,24 @@ def query_documents(request: QueryRequest) -> QueryResponse:
     response_class=StreamingResponse,
 )
 def stream_query_documents(request: QueryRequest) -> StreamingResponse:
-    """
-    Stream a RAG-generated answer token by token.
+    """Stream a RAG-generated answer token by token."""
+    import logging
+    log = logging.getLogger(__name__)
 
-    WHAT IS SSE (Server-Sent Events)?
-    It's a one-way channel: the server pushes data to the client as it
-    becomes available. The React frontend opens a fetch() request and
-    reads the response body incrementally.
-
-    As Llama 3 generates each token ("The", " main", " vulnerabilities"),
-    we immediately send it to the browser instead of waiting for the
-    full answer. This gives the familiar "AI typing" visual effect.
-    """
-    # Retrieve chunks (same as the non-streaming endpoint)
-    results = search_similar_chunks(
-        query=request.question,
-        top_k=request.top_k,
-        document_id=request.document_id,
-    )
+    try:
+        results = search_similar_chunks(
+            query=request.question,
+            top_k=request.top_k,
+            document_id=request.document_id,
+        )
+    except Exception as e:
+        log.error("Vector search error: %s", e)
+        raise HTTPException(status_code=503, detail="Vector search unavailable.")
 
     if not results:
         raise HTTPException(
             status_code=404,
-            detail="No relevant document chunks found. Please upload a PDF first.",
+            detail="No relevant document chunks found. Please upload a document first.",
         )
 
     chunks = []
@@ -193,10 +190,6 @@ def stream_query_documents(request: QueryRequest) -> StreamingResponse:
         doc.metadata["score"] = round(float(score), 4)
         chunks.append(doc)
 
-    # StreamingResponse wraps our token generator.
-    # media_type="text/plain" sends raw text tokens.
-    # Phase 5 will upgrade this to "text/event-stream" (SSE) for
-    # proper browser EventSource support.
     return StreamingResponse(
         content=stream_answer(chunks=chunks, question=request.question),
         media_type="text/plain",

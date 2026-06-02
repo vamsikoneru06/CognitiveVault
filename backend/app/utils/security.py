@@ -97,19 +97,20 @@ async def validate_pdf(file: UploadFile) -> None:
     await file.seek(0)
 
     size_bytes = len(content)
-    if size_bytes > settings.max_file_size_bytes:
-        raise HTTPException(
-            status_code=413,  # 413 = "Content Too Large"
-            detail=(
-                f"File size ({size_bytes / 1_048_576:.1f} MB) exceeds the "
-                f"maximum allowed size of {settings.max_file_size_mb} MB."
-            ),
-        )
 
     if size_bytes == 0:
         raise HTTPException(
             status_code=400,
             detail="The uploaded file is empty.",
+        )
+
+    if size_bytes > settings.max_file_size_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"File size ({size_bytes / 1_048_576:.1f} MB) exceeds the "
+                f"maximum allowed size of {settings.max_file_size_mb} MB."
+            ),
         )
 
 
