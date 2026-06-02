@@ -1,0 +1,48 @@
+# =============================================================
+# CognitiveVault — Root Git Ignore
+# =============================================================
+
+# ── Qdrant vector DB storage ──────────────────────────────────
+# Contains embeddings of every document ever uploaded.
+# This is private user data — never commit it.
+qdrant_storage/
+
+# ── IDE / Editor ──────────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.sw?
+
+# ── OS artefacts ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ── Frontend ──────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.env.*.local
+
+# ── Backend (also covered by backend/.gitignore) ──────────────
+backend/venv/
+backend/.env
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/uploads/*.pdf
+backend/uploads/*.docx
+backend/uploads/*.pptx
+backend/uploads/*.xlsx
+backend/uploads/*.doc
+backend/uploads/*.ppt
+backend/uploads/*.xls
+backend/uploads/*.txt
+backend/uploads/*.png
+backend/uploads/*.jpg
+backend/uploads/*.jpeg
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/

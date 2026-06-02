@@ -1,0 +1,65 @@
+# =============================================================
+# CognitiveVault Backend — Git Ignore Rules
+# =============================================================
+# SECURITY: These rules prevent sensitive data from being
+# accidentally committed and pushed to any remote repository.
+
+# --- Python Virtual Environment ---
+# The venv/ folder contains all installed packages (~500MB+).
+# Never commit it. Anyone can recreate it with: pip install -r requirements.txt
+venv/
+env/
+.venv/
+.env_local/
+
+# --- CRITICAL: Environment Variables ---
+# .env contains your local configuration. If this ever holds API keys
+# or passwords, a leaked .env file is a security incident.
+.env
+*.env
+!.env.example
+
+# --- Uploaded User Documents ---
+# PDFs uploaded by users are private data. They must NEVER be committed.
+# Note: uploads/* (not uploads/) lets the !.gitkeep negation work.
+uploads/*
+!uploads/.gitkeep
+
+# --- Qdrant Local Storage ---
+# If using Qdrant in local-file mode (not Docker), its data lives here.
+qdrant_storage/
+
+# --- Python Bytecode ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# --- Testing Artifacts ---
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Build Artifacts ---
+dist/
+build/
+*.egg-info/
+*.egg
+
+# --- IDE Files ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Jupyter Notebooks (scratch work) ---
+*.ipynb
+.ipynb_checkpoints/
+
+# --- Logs ---
+*.log
+logs/

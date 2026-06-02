@@ -1,0 +1,65 @@
+# =============================================================
+# CognitiveVault — Python Backend Dependencies
+# =============================================================
+# Install with: pip install -r requirements.txt
+# Python 3.11+ required
+
+# --- Web Framework ---
+# FastAPI is our API engine. uvicorn is the server that runs it.
+# [standard] adds websocket support and faster startup.
+fastapi>=0.111.0,<0.116.0
+uvicorn[standard]>=0.30.0,<0.33.0
+
+# --- LangChain Ecosystem ---
+# langchain          = the main orchestration framework
+# langchain-community = third-party integrations (PDF loaders, etc.)
+# langchain-core      = base abstractions (auto-installed, but pinned for stability)
+# langchain-text-splitters = the chunking utilities we use in Phase 2
+# langchain-huggingface    = HuggingFace embedding integration (Phase 3)
+# langchain-qdrant         = Qdrant vector store integration (Phase 3)
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-text-splitters>=0.3.0,<0.4.0
+langchain-huggingface>=0.1.0,<0.2.0
+langchain-qdrant>=0.2.0,<0.3.0
+
+# --- PDF Processing ---
+# pypdf is the engine LangChain uses under the hood to read PDF bytes.
+pypdf>=4.2.0,<6.0.0
+
+# --- Local Embeddings (runs entirely on your machine) ---
+# sentence-transformers downloads and runs HuggingFace models locally.
+# torch is its required deep-learning backend.
+sentence-transformers>=3.0.0,<4.0.0
+torch>=2.2.0
+
+# --- Vector Database Client ---
+# Python client to communicate with the Qdrant server (running in Docker).
+qdrant-client>=1.10.0,<2.0.0
+
+# --- Local LLM (Ollama) ---
+# Python client to send prompts to your local Ollama server.
+ollama>=0.3.0,<1.0.0
+
+# --- API Security & File Handling ---
+# python-multipart: required by FastAPI to accept file uploads
+# pydantic:         data validation (FastAPI uses this for all request/response models)
+# pydantic-settings: reads .env config into typed Python objects
+python-multipart>=0.0.9,<0.1.0
+pydantic>=2.7.0,<3.0.0
+pydantic-settings>=2.3.0,<3.0.0
+
+# --- Utilities ---
+# python-dotenv: loads .env file into environment variables
+# aiofiles:      async file I/O (needed for non-blocking file writes in FastAPI)
+python-dotenv>=1.0.1,<2.0.0
+aiofiles>=23.2.0,<25.0.0
+
+# --- Testing ---
+# pytest:          test runner
+# httpx:           async HTTP client used to test FastAPI endpoints
+# pytest-asyncio:  makes pytest understand async test functions
+pytest>=8.2.0,<9.0.0
+httpx>=0.27.0,<0.29.0
+pytest-asyncio>=0.23.0,<0.25.0
