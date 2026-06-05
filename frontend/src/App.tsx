@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import ChatWindow from './components/ChatWindow';
+import { OwnerCard } from './components/ui/owner-card';
 import { PromptInputBox } from './components/ui/ai-prompt-box';
 import { WovenCanvas } from './components/ui/woven-light-hero';
 import { streamQuery, uploadDocument } from './services/api';
@@ -198,6 +199,9 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* ── Owner attribution card ── */}
+      <OwnerCard />
     </div>
   );
 }
